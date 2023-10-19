@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      padding: 0;
+      margin: 0;
+      line-height: 1;
+    }
+
+    body {
+      background-color: #FFD59D;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    }
+
+    .container {
+      width: 1024px;
+      margin: 0 auto;
+      display: flex;
+    }
+
+    #game-canvas {
+      width: 640px;
+      height: 960px;
+    }
+
+    #game-stats {
+      padding: 32px;
+    }
+
+    .game-stats-label {
+      font-size: 24px;
+    }
+
+    #game-score {
+      font-size: 64px;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="game-canvas"></div>
+    <div id="game-stats">
+      <p class="game-stats-label">Score:</p>
+      <p id="game-score">0</p>
+      <div id="game-end"></div>
+    </div>
+  </div>
+  <script type="text/javascript" src="./matter.js"></script>
+  <script type="text/javascript" src="./index.js"></script>
+</body>
+</html>
