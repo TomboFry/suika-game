@@ -79,7 +79,7 @@ const Game = {
 
 	loseGame: function () {
 		Game.stateIndex = GameStates.LOSE;
-		Game.elements.end.innerText = "You Lose The Game!!! (refresh to try again)";
+		Game.elements.end.innerHTML = `You Lose The Game!!!<br/><a href="">Retry</a>`;
 		runner.enabled = false;
 	},
 
@@ -135,7 +135,7 @@ const render = Render.create({
 		width: Game.width,
 		height: Game.height,
 		wireframes: false,
-		background: 'transparent'
+		background: '#ffdcae'
 	}
 });
 
