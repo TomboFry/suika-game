@@ -16,7 +16,7 @@ const {
 	Composite, Bodies, Events
 } = Matter;
 
-const wallPad = 32;
+const wallPad = 64;
 const friction = { friction: 0.005, frictionStatic: 0.005, frictionAir: 0, restitution: 0.1 };
 
 const GameStates = {
@@ -51,20 +51,11 @@ const Game = {
 	},
 
 	stateIndex: 0,
-	setGameState: function (newStateIndex) {
-
-	},
 
 	score: 0,
-	addPoints: function (points) {
-		this.score += points;
-		this.elements.score.innerText = this.score;
-	},
 	calculateScore: function () {
 		const score = Composite.allBodies(engine.world).reduce((acc, cur) => {
 			if (cur.isStatic) return acc;
-			// const index = this.lookupFruitIndex(cur.circleRadius);
-			// return acc + this.fruitSizes[index].scoreValue;
 			return acc + this.fruitSizes[cur.sizeIndex].scoreValue;
 		}, 0);
 		this.score = score;
@@ -72,23 +63,23 @@ const Game = {
 	},
 
 	fruitSizes: [
-		{ radius: 24,  colourFill: '#df4f8a', colourStroke: '#d21535', scoreValue: 1,    },
-		{ radius: 32,  colourFill: '#e077f9', colourStroke: '#d136ff', scoreValue: 2,    },
-		{ radius: 40,  colourFill: '#df714f', colourStroke: '#e82d08', scoreValue: 4,    },
-		{ radius: 56,  colourFill: '#e58b54', colourStroke: '#f76a3b', scoreValue: 10,   },
-		{ radius: 64,  colourFill: '#fa92a5', colourStroke: '#fab5b2', scoreValue: 20,   },
-		{ radius: 72,  colourFill: '#f6e665', colourStroke: '#cfb305', scoreValue: 40,   },
-		{ radius: 84,  colourFill: '#ffa639', colourStroke: '#e7b40a', scoreValue: 80,   },
-		{ radius: 96,  colourFill: '#fe9bfa', colourStroke: '#ff04e6', scoreValue: 160,  },
-		{ radius: 128, colourFill: '#f3ec14', colourStroke: '#fac50e', scoreValue: 320,  },
-		{ radius: 160, colourFill: '#c5ff5c', colourStroke: '#2ef90f', scoreValue: 640,  },
-		{ radius: 192, colourFill: '#73cf00', colourStroke: '#008e00', scoreValue: 1280, },
+		{ radius: 24,  scoreValue: 1,    img: './assets/img/circle0.png'  },
+		{ radius: 32,  scoreValue: 2,    img: './assets/img/circle1.png'  },
+		{ radius: 40,  scoreValue: 4,    img: './assets/img/circle2.png'  },
+		{ radius: 56,  scoreValue: 10,   img: './assets/img/circle3.png'  },
+		{ radius: 64,  scoreValue: 20,   img: './assets/img/circle4.png'  },
+		{ radius: 72,  scoreValue: 40,   img: './assets/img/circle5.png'  },
+		{ radius: 84,  scoreValue: 80,   img: './assets/img/circle6.png'  },
+		{ radius: 96,  scoreValue: 160,  img: './assets/img/circle7.png'  },
+		{ radius: 128, scoreValue: 320,  img: './assets/img/circle8.png'  },
+		{ radius: 160, scoreValue: 640,  img: './assets/img/circle9.png'  },
+		{ radius: 192, scoreValue: 1280, img: './assets/img/circle10.png' },
 	],
 	nextFruitSize: 0,
 
 	loseGame: function () {
 		Game.stateIndex = GameStates.LOSE;
-		Game.elements.end.innerText = "You Lose The Game!!!";
+		Game.elements.end.innerText = "You Lose The Game!!! (refresh to try again)";
 		runner.enabled = false;
 	},
 
@@ -106,7 +97,7 @@ const Game = {
 		const circle = Bodies.circle(x, y, size.radius, {
 			...friction,
 			...extraConfig,
-			render: { fillStyle: size.colourFill, lineWidth: 10, strokeStyle: size.colourStroke },
+			render: { sprite: { texture: size.img, xScale: size.radius / 512, yScale: size.radius / 512 } },
 		});
 		circle.sizeIndex = sizeIndex;
 
