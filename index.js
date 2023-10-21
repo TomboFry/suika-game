@@ -13,26 +13,33 @@ const rand = mulberry32(Date.now());
 
 const {
 	Engine, Render, Runner, Composites, Common, MouseConstraint, Mouse,
-	Composite, Bodies, Events
+	Composite, Bodies, Events,
 } = Matter;
 
 const wallPad = 64;
-const friction = { friction: 0.005, frictionStatic: 0.005, frictionAir: 0, restitution: 0.1 };
+const loseHeight = 84;
+const friction = {
+	friction: 0.005,
+	frictionStatic: 0.005,
+	frictionAir: 0,
+	restitution: 0.1
+};
 
 const GameStates = {
-	WAIT: 0,
-	DROP: 1,
-	LOSE: 2,
-	WIN: 3,
-}
+	MENU: 0,
+	READY: 1,
+	DROP: 2,
+	LOSE: 3,
+};
 
 const Game = {
 	width: 640,
 	height: 960,
 	elements: {
 		canvas: document.getElementById('game-canvas'),
+		ui: document.getElementById('game-ui'),
 		score: document.getElementById('game-score'),
-		end: document.getElementById('game-end'),
+		end: document.getElementById('game-end-container'),
 		previewBall: null,
 	},
 	sounds: {
@@ -50,7 +57,7 @@ const Game = {
 		pop10: new Audio('./assets/pop10.mp3'),
 	},
 
-	stateIndex: 0,
+	stateIndex: GameStates.MENU,
 
 	score: 0,
 	calculateScore: function () {
@@ -77,9 +84,88 @@ const Game = {
 	],
 	nextFruitSize: 0,
 
+	initGame: function () {
+		Render.run(render);
+		Runner.run(runner, engine);
+
+		Composite.add(engine.world, menuStatics);
+
+		Game.elements.ui.style.display = 'none';
+
+		const menuMouseDown = function () {
+			if (mouseConstraint.body === null || mouseConstraint.body?.label !== 'btn-start') {
+				return;
+			}
+
+			Events.off(mouseConstraint, 'mousedown', menuMouseDown);
+			Game.startGame();
+		}
+
+		Events.on(mouseConstraint, 'mousedown', menuMouseDown);
+	},
+
+	startGame: function () {
+		Composite.remove(engine.world, menuStatics);
+		Composite.add(engine.world, gameStatics);
+
+		Game.calculateScore();
+		Game.elements.ui.style.display = 'block';
+		Game.elements.end.style.display = 'none';
+		Game.elements.previewBall = Game.generateFruitBody(Game.width / 2, 0, 0, { isStatic: true });
+		Composite.add(engine.world, Game.elements.previewBall);
+
+		setTimeout(() => {
+			Game.stateIndex = GameStates.READY;
+		}, 250);
+
+		Events.on(mouseConstraint, 'mouseup', function (e) {
+			Game.addFruit(e.mouse.position.x);
+		});
+
+		Events.on(mouseConstraint, 'mousemove', function (e) {
+			if (Game.stateIndex !== GameStates.READY) return;
+			if (Game.elements.previewBall === null) return;
+
+			Game.elements.previewBall.position.x = e.mouse.position.x;
+		});
+
+		Events.on(engine, 'collisionStart', function (e) {
+			for (let i = 0; i < e.pairs.length; i++) {
+				const { bodyA, bodyB } = e.pairs[i];
+
+				// Skip if collision is wall
+				if (bodyA.isStatic || bodyB.isStatic) continue;
+
+				const aY = bodyA.position.y + bodyA.circleRadius;
+				const bY = bodyB.position.y + bodyB.circleRadius;
+
+				// Uh oh, too high!
+				if (aY < loseHeight || bY < loseHeight) {
+					Game.loseGame();
+					return;
+				}
+
+				// Skip different sizes
+				if (bodyA.sizeIndex !== bodyB.sizeIndex) continue;
+
+				// Skip if largest size already
+				if (bodyA.circleRadius >= Game.fruitSizes[Game.fruitSizes.length - 1].radius) continue;
+
+				// Therefore, circles are same size, so merge them.
+				const midPosX = (bodyA.position.x + bodyB.position.x) / 2;
+				const midPosY = (bodyA.position.y + bodyB.position.y) / 2;
+
+				Game.sounds[`pop${bodyA.sizeIndex}`].play();
+				Composite.remove(engine.world, [bodyA, bodyB]);
+				Composite.add(engine.world, Game.generateFruitBody(midPosX, midPosY, bodyA.sizeIndex + 1));
+				Game.calculateScore();
+			}
+		});
+	},
+
 	loseGame: function () {
 		Game.stateIndex = GameStates.LOSE;
-		Game.elements.end.innerHTML = `You Lose The Game!!!<br/><a href="">Retry</a>`;
+		Game.elements.end.style.display = 'flex';
 		runner.enabled = false;
 	},
 
@@ -103,8 +189,9 @@ const Game = {
 
 		return circle;
 	},
+
 	addFruit: function (x) {
-		if (this.stateIndex !== GameStates.WAIT) return;
+		if (this.stateIndex !== GameStates.READY) return;
 
 		this.sounds.click.play();
 
@@ -121,13 +208,14 @@ const Game = {
 		setTimeout(() => {
 			if (Game.stateIndex === GameStates.DROP) {
 				Composite.add(engine.world, Game.elements.previewBall);
-				Game.stateIndex = GameStates.WAIT;
+				Game.stateIndex = GameStates.READY;
 			}
 		}, 500);
 	}
 }
 
 const engine = Engine.create();
+const runner = Runner.create();
 const render = Render.create({
 	element: Game.elements.canvas,
 	engine,
@@ -139,7 +227,36 @@ const render = Render.create({
 	}
 });
 
-const statics = [
+// Add each fruit in a circle
+const menuStatics = [
+	Bodies.rectangle(Game.width / 2, Game.height * 0.4, 512, 512, {
+		isStatic: true,
+		render: { sprite: { texture: './assets/img/bg-menu.png' } },
+	}),
+	...Array.apply(null, Array(11)).map((_, index) => {
+		const x = (Game.width / 2) + 192 * Math.cos((Math.PI * 2 * index)/12);
+		const y = (Game.height * 0.4) + 192 * Math.sin((Math.PI * 2 * index)/12);
+		const r = 64;
+
+		return Bodies.circle(x, y, r, {
+			isStatic: true,
+			render: {
+				sprite: {
+					texture: `./assets/img/circle${index}.png`,
+					xScale: r / 1024,
+					yScale: r / 1024,
+				},
+			},
+		});
+	}),
+	Bodies.rectangle(Game.width / 2, Game.height * 0.75, 512, 96, {
+		isStatic: true,
+		label: 'btn-start',
+		render: { sprite: { texture: './assets/img/btn-start.png' } },
+	}),
+];
+
+const gameStatics = [
 	// Left
 	Bodies.rectangle(-(wallPad / 2), Game.height / 2, wallPad, Game.height, { isStatic: true, ...friction }),
 
@@ -149,10 +266,6 @@ const statics = [
 	// Bottom
 	Bodies.rectangle(Game.width / 2, Game.height + (wallPad / 2), Game.width, wallPad, { isStatic: true, ...friction }),
 ];
-Composite.add(engine.world, statics);
-
-Game.elements.previewBall = Game.generateFruitBody(Game.width / 2, 0, 0, { isStatic: true });
-Composite.add(engine.world, Game.elements.previewBall);
 
 // add mouse control
 const mouse = Mouse.create(render.canvas);
@@ -161,57 +274,39 @@ const mouseConstraint = MouseConstraint.create(engine, {
 	constraint: {
 		stiffness: 0.2,
 		render: {
-			visible: false
-		}
-	}
+			visible: false,
+		},
+	},
 });
 render.mouse = mouse;
 
-Render.run(render);
+Game.initGame();
 
-const runner = Runner.create();
-Runner.run(runner, engine);
+const resizeCanvas = () => {
+	const screenWidth = document.body.clientWidth;
+	const screenHeight = document.body.clientHeight;
 
-Events.on(mouseConstraint, 'mouseup', function (e) {
-	Game.addFruit(e.mouse.position.x);
-});
+	let newWidth = Game.width;
+	let newHeight = Game.height;
+	let scale = 1;
 
-Events.on(mouseConstraint, 'mousemove', function (e) {
-	Game.elements.previewBall.position.x = e.mouse.position.x;
-});
-
-Events.on(engine, 'collisionStart', function (e) {
-	// change object colours to show those starting a collision
-	for (let i = 0; i < e.pairs.length; i++) {
-		const pair = e.pairs[i];
-
-		// Skip if collision is wall
-		if (pair.bodyA.isStatic || pair.bodyB.isStatic) continue;
-
-		// Uh oh, too high!
-		if (pair.bodyA.position.y < 64 || pair.bodyB.position.y < 64) {
-			Game.loseGame();
-			return;
-		}
-
-		// Skip different sizes
-		if (pair.bodyA.circleRadius !== pair.bodyB.circleRadius) continue;
-
-		const { sizeIndex, circleRadius } = pair.bodyA;
-
-		// Skip if largest size already
-		if (circleRadius >= Game.fruitSizes[Game.fruitSizes.length - 1].radius) continue;
-
-		// Therefore, circles are same size, so merge them.
-		const midPosX = (pair.bodyA.position.x + pair.bodyB.position.x) / 2;
-		const midPosY = (pair.bodyA.position.y + pair.bodyB.position.y) / 2;
-
-		// const sizeIndex = Game.lookupFruitIndex(radius);
-		// if (sizeIndex === null) continue;
-
-		Game.sounds[`pop${sizeIndex}`].play();
-		Composite.remove(engine.world, [pair.bodyA, pair.bodyB]);
-		Composite.add(engine.world, Game.generateFruitBody(midPosX, midPosY, sizeIndex + 1));
-		Game.calculateScore();
+	if (screenWidth * 1.5 > screenHeight) {
+		newHeight = Math.min(Game.height, screenHeight);
+		newWidth = newHeight / 1.5;
+		scale = newHeight / Game.height;
+	} else {
+		newWidth = Math.min(Game.width, screenWidth);
+		newHeight = newWidth * 1.5;
+		scale = newWidth / Game.width;
 	}
-});
+
+	render.canvas.style.width = `${newWidth}px`;
+	render.canvas.style.height = `${newHeight}px`;
+
+	Game.elements.ui.style.width = `${Game.width}px`;
+	Game.elements.ui.style.height = `${Game.height}px`;
+	Game.elements.ui.style.transform = `scale(${scale})`;
+};
+
+document.body.onload = resizeCanvas;
+document.body.onresize = resizeCanvas;
