@@ -3,17 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Suika Clone</title>
+  <title>Suika / Watermelon Game Clone</title>
+  <meta property="og:title" content="Suika / Watermelon Game Clone" />
+  <meta property="og:image" content="https://tombofry.github.io/suika-game/screenshot.png" />
   <style>
-    @import url(https://fonts.bunny.net/css?family=azeret-mono:700,900);
+    @import url(https://fonts.bunny.net/css?family=azeret-mono:400,700,900);
 
     :root {
       --col-bg: #FFD59D;
-      --col-bg-light: #FFEEDB;
+      --col-bg-light: #FFDCAE;
+      --col-bg-lighter: #FFEEDB;
       --col-primary: #FF5300;
       --col-primary-dark: #FF2700;
       --col-primary-light: #FF8800;
       --col-shadow: rgba(0, 0, 0, 0.25);
+      --col-white: #fff;
     }
 
     * {
@@ -25,7 +29,7 @@
 
     body {
       background-color: var(--col-bg);
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      font-family: 'Azeret Mono', sans-serif;
     }
 
     .container {
@@ -33,7 +37,6 @@
       max-width: 640px;
       margin: 0 auto;
       height: 100vh;
-      display: flex;
     }
 
     #game-canvas {
@@ -46,7 +49,6 @@
       height: 100%;
       pointer-events: none;
       user-select: none;
-      font-family: 'Azeret Mono', sans-serif;
       font-weight: 700;
       display: none;
       transform-origin: top left;
@@ -59,7 +61,7 @@
       font-size: 84px;
       font-weight: 900;
       padding-left: 16px;
-      color: var(--col-bg-light);
+      color: var(--col-bg-lighter);
       text-shadow: 3px 3px 0 var(--col-primary), -3px -3px 0 var(--col-primary), -3px 3px 0 var(--col-primary), 3px -3px 0 var(--col-primary);
     }
 
@@ -76,7 +78,7 @@
     #game-end {
       text-align: center;
       padding: 32px 48px;
-      background-color: var(--col-bg-light);
+      background-color: var(--col-bg-lighter);
       border: 5px solid var(--col-primary);
       box-shadow: 0 4px 32px var(--col-shadow);
       border-radius: 32px;
@@ -86,14 +88,14 @@
     }
 
     #game-end-title {
-      font-weight: 400;
+      font-weight: 700;
       font-size: 48px;
       color: var(--col-primary-dark);
     }
 
     #game-end-link {
       display: inline-block;
-      color: #fff;
+      color: var(--col-white);
       font-size: 24px;
       text-decoration: none;
       background-color: var(--col-primary-light);
@@ -101,6 +103,39 @@
       padding: 16px;
       border-radius: 16px;
       box-shadow: 4px 4px 0 var(--col-shadow);
+    }
+
+    #game-end-link:hover {
+      background-color: var(--col-primary);
+      box-shadow: 6px 6px 0 var(--col-shadow);
+    }
+
+    #game-status {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 48px;
+      background-color: var(--col-bg-lighter);
+      display: flex;
+    }
+
+    #game-status-item {
+      display: flex;
+      line-height: 1;
+      align-items: center;
+    }
+
+    #game-highscore-label {
+      color: #666;
+      font-size: 16px;
+      margin-left: 24px;
+    }
+
+    #game-highscore-value {
+      color: #333;
+      font-weight: 700;
+      font-size: 24px;
     }
   </style>
 </head>
@@ -112,11 +147,17 @@
 
         <div id="game-end-container">
           <div id="game-end">
-            <div id="game-end-title">You Lose!</div>
+            <div id="game-end-title">Game Over!</div>
             <a id="game-end-link" href="">Try Again</a>
           </div>
         </div>
 
+        <div id="game-status">
+          <div id="game-status-item">
+            <div id="game-highscore-label">Highscore:&nbsp;</div>
+            <div id="game-highscore-value">0</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

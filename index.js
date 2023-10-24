@@ -18,6 +18,7 @@ const {
 
 const wallPad = 64;
 const loseHeight = 84;
+const statusBarHeight = 48;
 const friction = {
 	friction: 0.005,
 	frictionStatic: 0.005,
@@ -40,8 +41,12 @@ const Game = {
 		ui: document.getElementById('game-ui'),
 		score: document.getElementById('game-score'),
 		end: document.getElementById('game-end-container'),
+		endTitle: document.getElementById('game-end-title'),
+		status: document.getElementById('game-status-item'),
+		statusValue: document.getElementById('game-highscore-value'),
 		previewBall: null,
 	},
+	cache: { highscore: 0 },
 	sounds: {
 		click: new Audio('./assets/click.mp3'),
 		pop0: new Audio('./assets/pop0.mp3'),
@@ -84,11 +89,37 @@ const Game = {
 	],
 	nextFruitSize: 0,
 
+	showHighscore: function () {
+		Game.elements.statusValue.innerText = Game.cache.highscore;
+	},
+	loadHighscore: function () {
+		const gameCache = localStorage.getItem('suika-game-cache');
+		if (gameCache === null) {
+			Game.saveHighscore();
+			return;
+		}
+
+		Game.cache = JSON.parse(gameCache);
+		Game.showHighscore();
+	},
+	saveHighscore: function () {
+		Game.calculateScore();
+		if (Game.score < Game.cache.highscore) return;
+
+		Game.cache.highscore = Game.score;
+		Game.showHighscore();
+		Game.elements.endTitle.innerText = 'New Highscore!';
+
+		localStorage.setItem('suika-game-cache', JSON.stringify(Game.cache));
+	},
+
 	initGame: function () {
 		Render.run(render);
 		Runner.run(runner, engine);
 
 		Composite.add(engine.world, menuStatics);
+
+		Game.loadHighscore();
 
 		Game.elements.ui.style.display = 'none';
 
@@ -105,10 +136,13 @@ const Game = {
 	},
 
 	startGame: function () {
+		Game.sounds.click.play();
+
 		Composite.remove(engine.world, menuStatics);
 		Composite.add(engine.world, gameStatics);
 
 		Game.calculateScore();
+		Game.elements.endTitle.innerText = 'Game Over!';
 		Game.elements.ui.style.display = 'block';
 		Game.elements.end.style.display = 'none';
 		Game.elements.previewBall = Game.generateFruitBody(Game.width / 2, 0, 0, { isStatic: true });
@@ -167,6 +201,7 @@ const Game = {
 		Game.stateIndex = GameStates.LOSE;
 		Game.elements.end.style.display = 'flex';
 		runner.enabled = false;
+		Game.saveHighscore();
 	},
 
 	// Returns an index, or null
@@ -227,12 +262,13 @@ const render = Render.create({
 	}
 });
 
-// Add each fruit in a circle
 const menuStatics = [
 	Bodies.rectangle(Game.width / 2, Game.height * 0.4, 512, 512, {
 		isStatic: true,
 		render: { sprite: { texture: './assets/img/bg-menu.png' } },
 	}),
+
+	// Add each fruit in a circle
 	...Array.apply(null, Array(11)).map((_, index) => {
 		const x = (Game.width / 2) + 192 * Math.cos((Math.PI * 2 * index)/12);
 		const y = (Game.height * 0.4) + 192 * Math.sin((Math.PI * 2 * index)/12);
@@ -249,6 +285,7 @@ const menuStatics = [
 			},
 		});
 	}),
+
 	Bodies.rectangle(Game.width / 2, Game.height * 0.75, 512, 96, {
 		isStatic: true,
 		label: 'btn-start',
@@ -256,15 +293,21 @@ const menuStatics = [
 	}),
 ];
 
+const wallProps = {
+	isStatic: true,
+	render: { fillStyle: '#FFEEDB' },
+	...friction,
+};
+
 const gameStatics = [
 	// Left
-	Bodies.rectangle(-(wallPad / 2), Game.height / 2, wallPad, Game.height, { isStatic: true, ...friction }),
+	Bodies.rectangle(-(wallPad / 2), Game.height / 2, wallPad, Game.height, wallProps),
 
 	// Right
-	Bodies.rectangle(Game.width + (wallPad / 2), Game.height / 2, wallPad, Game.height, { isStatic: true, ...friction }),
+	Bodies.rectangle(Game.width + (wallPad / 2), Game.height / 2, wallPad, Game.height, wallProps),
 
 	// Bottom
-	Bodies.rectangle(Game.width / 2, Game.height + (wallPad / 2), Game.width, wallPad, { isStatic: true, ...friction }),
+	Bodies.rectangle(Game.width / 2, Game.height + (wallPad / 2) - statusBarHeight, Game.width, wallPad, wallProps),
 ];
 
 // add mouse control
@@ -288,16 +331,16 @@ const resizeCanvas = () => {
 
 	let newWidth = Game.width;
 	let newHeight = Game.height;
-	let scale = 1;
+	let scaleUI = 1;
 
 	if (screenWidth * 1.5 > screenHeight) {
 		newHeight = Math.min(Game.height, screenHeight);
 		newWidth = newHeight / 1.5;
-		scale = newHeight / Game.height;
+		scaleUI = newHeight / Game.height;
 	} else {
 		newWidth = Math.min(Game.width, screenWidth);
 		newHeight = newWidth * 1.5;
-		scale = newWidth / Game.width;
+		scaleUI = newWidth / Game.width;
 	}
 
 	render.canvas.style.width = `${newWidth}px`;
@@ -305,7 +348,7 @@ const resizeCanvas = () => {
 
 	Game.elements.ui.style.width = `${Game.width}px`;
 	Game.elements.ui.style.height = `${Game.height}px`;
-	Game.elements.ui.style.transform = `scale(${scale})`;
+	Game.elements.ui.style.transform = `scale(${scaleUI})`;
 };
 
 document.body.onload = resizeCanvas;
