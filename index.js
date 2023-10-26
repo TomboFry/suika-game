@@ -68,7 +68,7 @@ const Game = {
 	fruitsMerged: [],
 	calculateScore: function () {
 		const score = Game.fruitsMerged.reduce((total, count, sizeIndex) => {
-			const value = (Game.fruitSizes[sizeIndex].scoreValue * count * 2);
+			const value = Game.fruitSizes[sizeIndex].scoreValue * count;
 			return total + value;
 		}, 0);
 
@@ -77,17 +77,17 @@ const Game = {
 	},
 
 	fruitSizes: [
-		{ radius: 24,  scoreValue: 1,    img: './assets/img/circle0.png'  },
-		{ radius: 32,  scoreValue: 2,    img: './assets/img/circle1.png'  },
-		{ radius: 40,  scoreValue: 4,    img: './assets/img/circle2.png'  },
-		{ radius: 56,  scoreValue: 10,   img: './assets/img/circle3.png'  },
-		{ radius: 64,  scoreValue: 20,   img: './assets/img/circle4.png'  },
-		{ radius: 72,  scoreValue: 40,   img: './assets/img/circle5.png'  },
-		{ radius: 84,  scoreValue: 80,   img: './assets/img/circle6.png'  },
-		{ radius: 96,  scoreValue: 160,  img: './assets/img/circle7.png'  },
-		{ radius: 128, scoreValue: 320,  img: './assets/img/circle8.png'  },
-		{ radius: 160, scoreValue: 640,  img: './assets/img/circle9.png'  },
-		{ radius: 192, scoreValue: 1280, img: './assets/img/circle10.png' },
+		{ radius: 24,  scoreValue: 1,  img: './assets/img/circle0.png'  },
+		{ radius: 32,  scoreValue: 3,  img: './assets/img/circle1.png'  },
+		{ radius: 40,  scoreValue: 6,  img: './assets/img/circle2.png'  },
+		{ radius: 56,  scoreValue: 10, img: './assets/img/circle3.png'  },
+		{ radius: 64,  scoreValue: 15, img: './assets/img/circle4.png'  },
+		{ radius: 72,  scoreValue: 21, img: './assets/img/circle5.png'  },
+		{ radius: 84,  scoreValue: 28, img: './assets/img/circle6.png'  },
+		{ radius: 96,  scoreValue: 36, img: './assets/img/circle7.png'  },
+		{ radius: 128, scoreValue: 45, img: './assets/img/circle8.png'  },
+		{ radius: 160, scoreValue: 55, img: './assets/img/circle9.png'  },
+		{ radius: 192, scoreValue: 66, img: './assets/img/circle10.png' },
 	],
 	currentFruitSize: 0,
 	nextFruitSize: 0,
