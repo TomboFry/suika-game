@@ -20,8 +20,8 @@ const wallPad = 64;
 const loseHeight = 84;
 const statusBarHeight = 48;
 const friction = {
-	friction: 0.005,
-	frictionStatic: 0.005,
+	friction: 0.006,
+	frictionStatic: 0.006,
 	frictionAir: 0,
 	restitution: 0.1
 };
@@ -42,8 +42,8 @@ const Game = {
 		score: document.getElementById('game-score'),
 		end: document.getElementById('game-end-container'),
 		endTitle: document.getElementById('game-end-title'),
-		status: document.getElementById('game-status-item'),
 		statusValue: document.getElementById('game-highscore-value'),
+		nextFruitImg: document.getElementById('game-next-fruit'),
 		previewBall: null,
 	},
 	cache: { highscore: 0 },
@@ -68,10 +68,10 @@ const Game = {
 	calculateScore: function () {
 		const score = Composite.allBodies(engine.world).reduce((acc, cur) => {
 			if (cur.isStatic) return acc;
-			return acc + this.fruitSizes[cur.sizeIndex].scoreValue;
+			return acc + Game.fruitSizes[cur.sizeIndex].scoreValue;
 		}, 0);
-		this.score = score;
-		this.elements.score.innerText = this.score;
+		Game.score = score;
+		Game.elements.score.innerText = Game.score;
 	},
 
 	fruitSizes: [
@@ -87,7 +87,12 @@ const Game = {
 		{ radius: 160, scoreValue: 640,  img: './assets/img/circle9.png'  },
 		{ radius: 192, scoreValue: 1280, img: './assets/img/circle10.png' },
 	],
+	currentFruitSize: 0,
 	nextFruitSize: 0,
+	setNextFruitSize: function () {
+		Game.nextFruitSize = Math.floor(rand() * 5);
+		Game.elements.nextFruitImg.src = `./assets/img/circle${Game.nextFruitSize}.png`;
+	},
 
 	showHighscore: function () {
 		Game.elements.statusValue.innerText = Game.cache.highscore;
@@ -182,8 +187,12 @@ const Game = {
 				// Skip different sizes
 				if (bodyA.sizeIndex !== bodyB.sizeIndex) continue;
 
-				// Skip if largest size already
-				if (bodyA.circleRadius >= Game.fruitSizes[Game.fruitSizes.length - 1].radius) continue;
+				let newSize = bodyA.sizeIndex + 1;
+
+				// Go back to smallest size
+				if (bodyA.circleRadius >= Game.fruitSizes[Game.fruitSizes.length - 1].radius) {
+					newSize = 0;
+				}
 
 				// Therefore, circles are same size, so merge them.
 				const midPosX = (bodyA.position.x + bodyB.position.x) / 2;
@@ -191,7 +200,7 @@ const Game = {
 
 				Game.sounds[`pop${bodyA.sizeIndex}`].play();
 				Composite.remove(engine.world, [bodyA, bodyB]);
-				Composite.add(engine.world, Game.generateFruitBody(midPosX, midPosY, bodyA.sizeIndex + 1));
+				Composite.add(engine.world, Game.generateFruitBody(midPosX, midPosY, newSize));
 				Game.calculateScore();
 			}
 		});
@@ -206,15 +215,15 @@ const Game = {
 
 	// Returns an index, or null
 	lookupFruitIndex: function (radius) {
-		const sizeIndex = this.fruitSizes.findIndex(size => size.radius == radius);
+		const sizeIndex = Game.fruitSizes.findIndex(size => size.radius == radius);
 		if (sizeIndex === undefined) return null;
-		if (sizeIndex === this.fruitSizes.length - 1) return null;
+		if (sizeIndex === Game.fruitSizes.length - 1) return null;
 
 		return sizeIndex;
 	},
 
 	generateFruitBody: function (x, y, sizeIndex, extraConfig = {}) {
-		const size = this.fruitSizes[sizeIndex];
+		const size = Game.fruitSizes[sizeIndex];
 		const circle = Bodies.circle(x, y, size.radius, {
 			...friction,
 			...extraConfig,
@@ -226,19 +235,23 @@ const Game = {
 	},
 
 	addFruit: function (x) {
-		if (this.stateIndex !== GameStates.READY) return;
+		if (Game.stateIndex !== GameStates.READY) return;
 
-		this.sounds.click.play();
+		Game.sounds.click.play();
 
-		this.stateIndex = GameStates.DROP;
-		const latestFruit = this.generateFruitBody(x, 0, this.nextFruitSize);
+		Game.stateIndex = GameStates.DROP;
+		const latestFruit = Game.generateFruitBody(x, 0, Game.currentFruitSize);
 		Composite.add(engine.world, latestFruit);
 
-		this.nextFruitSize = Math.floor(rand() * 4);
-		this.calculateScore();
+		Game.currentFruitSize = Game.nextFruitSize;
+		Game.setNextFruitSize();
+		Game.calculateScore();
 
 		Composite.remove(engine.world, Game.elements.previewBall);
-		Game.elements.previewBall = Game.generateFruitBody(render.mouse.position.x, 0, Game.nextFruitSize, { isStatic: true });
+		Game.elements.previewBall = Game.generateFruitBody(render.mouse.position.x, 0, Game.currentFruitSize, {
+			isStatic: true,
+			collisionFilter: { mask: 0x0040 }
+		});
 
 		setTimeout(() => {
 			if (Game.stateIndex === GameStates.DROP) {
