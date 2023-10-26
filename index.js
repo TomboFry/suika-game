@@ -201,9 +201,30 @@ const Game = {
 				Game.sounds[`pop${bodyA.sizeIndex}`].play();
 				Composite.remove(engine.world, [bodyA, bodyB]);
 				Composite.add(engine.world, Game.generateFruitBody(midPosX, midPosY, newSize));
+				Game.addPop(midPosX, midPosY, bodyA.circleRadius);
 				Game.calculateScore();
 			}
 		});
+	},
+
+	addPop: function (x, y, r) {
+		const circle = Bodies.circle(x, y, r, {
+			isStatic: true,
+			collisionFilter: { mask: 0x0040 },
+			angle: rand() * (Math.PI * 2),
+			render: {
+				sprite: {
+					texture: './assets/img/pop.png',
+					xScale: r / 384,
+					yScale: r / 384,
+				}
+			},
+		});
+
+		Composite.add(engine.world, circle);
+		setTimeout(() => {
+			Composite.remove(engine.world, circle);
+		}, 100);
 	},
 
 	loseGame: function () {
