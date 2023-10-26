@@ -65,11 +65,13 @@ const Game = {
 	stateIndex: GameStates.MENU,
 
 	score: 0,
+	fruitsMerged: [],
 	calculateScore: function () {
-		const score = Composite.allBodies(engine.world).reduce((acc, cur) => {
-			if (cur.isStatic) return acc;
-			return acc + Game.fruitSizes[cur.sizeIndex].scoreValue;
+		const score = Game.fruitsMerged.reduce((total, count, sizeIndex) => {
+			const value = (Game.fruitSizes[sizeIndex].scoreValue * count * 2);
+			return total + value;
 		}, 0);
+
 		Game.score = score;
 		Game.elements.score.innerText = Game.score;
 	},
@@ -125,8 +127,8 @@ const Game = {
 		Composite.add(engine.world, menuStatics);
 
 		Game.loadHighscore();
-
 		Game.elements.ui.style.display = 'none';
+		Game.fruitsMerged = Array.apply(null, Array(Game.fruitSizes.length)).map(() => 0);
 
 		const menuMouseDown = function () {
 			if (mouseConstraint.body === null || mouseConstraint.body?.label !== 'btn-start') {
@@ -193,6 +195,8 @@ const Game = {
 				if (bodyA.circleRadius >= Game.fruitSizes[Game.fruitSizes.length - 1].radius) {
 					newSize = 0;
 				}
+
+				Game.fruitsMerged[bodyA.sizeIndex] += 1;
 
 				// Therefore, circles are same size, so merge them.
 				const midPosX = (bodyA.position.x + bodyB.position.x) / 2;
@@ -303,7 +307,7 @@ const menuStatics = [
 	}),
 
 	// Add each fruit in a circle
-	...Array.apply(null, Array(11)).map((_, index) => {
+	...Array.apply(null, Array(Game.fruitSizes.length)).map((_, index) => {
 		const x = (Game.width / 2) + 192 * Math.cos((Math.PI * 2 * index)/12);
 		const y = (Game.height * 0.4) + 192 * Math.sin((Math.PI * 2 * index)/12);
 		const r = 64;
