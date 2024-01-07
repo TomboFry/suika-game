@@ -189,6 +189,9 @@ const Game = {
 				// Skip different sizes
 				if (bodyA.sizeIndex !== bodyB.sizeIndex) continue;
 
+				// Skip if already popped
+				if (bodyA.popped || bodyB.popped) continue;
+
 				let newSize = bodyA.sizeIndex + 1;
 
 				// Go back to smallest size
@@ -201,6 +204,9 @@ const Game = {
 				// Therefore, circles are same size, so merge them.
 				const midPosX = (bodyA.position.x + bodyB.position.x) / 2;
 				const midPosY = (bodyA.position.y + bodyB.position.y) / 2;
+
+				bodyA.popped = true;
+				bodyB.popped = true;
 
 				Game.sounds[`pop${bodyA.sizeIndex}`].play();
 				Composite.remove(engine.world, [bodyA, bodyB]);
@@ -255,6 +261,7 @@ const Game = {
 			render: { sprite: { texture: size.img, xScale: size.radius / 512, yScale: size.radius / 512 } },
 		});
 		circle.sizeIndex = sizeIndex;
+		circle.popped = false;
 
 		return circle;
 	},
