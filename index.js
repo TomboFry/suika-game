@@ -19,6 +19,7 @@ const {
 const wallPad = 64;
 const loseHeight = 84;
 const statusBarHeight = 48;
+const previewBallHeight = 32;
 const friction = {
 	friction: 0.006,
 	frictionStatic: 0.006,
@@ -152,7 +153,7 @@ const Game = {
 		Game.elements.endTitle.innerText = 'Game Over!';
 		Game.elements.ui.style.display = 'block';
 		Game.elements.end.style.display = 'none';
-		Game.elements.previewBall = Game.generateFruitBody(Game.width / 2, 0, 0, { isStatic: true });
+		Game.elements.previewBall = Game.generateFruitBody(Game.width / 2, previewBallHeight, 0, { isStatic: true });
 		Composite.add(engine.world, Game.elements.previewBall);
 
 		setTimeout(() => {
@@ -272,7 +273,7 @@ const Game = {
 		Game.sounds.click.play();
 
 		Game.stateIndex = GameStates.DROP;
-		const latestFruit = Game.generateFruitBody(x, 0, Game.currentFruitSize);
+		const latestFruit = Game.generateFruitBody(x, previewBallHeight, Game.currentFruitSize);
 		Composite.add(engine.world, latestFruit);
 
 		Game.currentFruitSize = Game.nextFruitSize;
@@ -280,7 +281,7 @@ const Game = {
 		Game.calculateScore();
 
 		Composite.remove(engine.world, Game.elements.previewBall);
-		Game.elements.previewBall = Game.generateFruitBody(render.mouse.position.x, 0, Game.currentFruitSize, {
+		Game.elements.previewBall = Game.generateFruitBody(render.mouse.position.x, previewBallHeight, Game.currentFruitSize, {
 			isStatic: true,
 			collisionFilter: { mask: 0x0040 }
 		});
